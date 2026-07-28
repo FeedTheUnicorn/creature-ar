@@ -2,15 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
   <title>Dino AR</title>
 
-  <script type="module"
+  <script
+    type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
   </script>
 
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       width: 100%;
       height: 100%;
@@ -19,70 +26,122 @@
       font-family: Arial, Helvetica, sans-serif;
     }
 
+    /*
+      Keep model-viewer present and full-size so AR can initialise,
+      but place it behind the white landing screen.
+    */
     model-viewer {
-      width: 100%;
-      height: 100%;
-      --poster-color: transparent;
-      background: transparent;
-    }
-
-    /* Hide the 3D model before AR */
-    model-viewer::part(default-progress-bar),
-    model-viewer::part(default-ar-button),
-    model-viewer::part(default-loading-spinner) {
-      display: none;
-    }
-
-    /* Cover the preview with a white layer */
-    .overlay {
       position: fixed;
       inset: 0;
-      background: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      opacity: 0;
       pointer-events: none;
-      z-index: 5;
     }
 
-    /* Our custom AR button */
-    #ar-button {
-      pointer-events: auto;
-      padding: 18px 36px;
-      font-size: 22px;
-      font-weight: bold;
-      border: none;
+    .landing-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background: #ffffff;
+    }
+
+    #launch-ar {
+      padding: 18px 34px;
+      border: 0;
       border-radius: 999px;
-      background: #007AFF;
-      color: white;
+
+      background: #007aff;
+      color: #ffffff;
+
+      font-size: 21px;
+      font-weight: 700;
       cursor: pointer;
-      box-shadow: 0 8px 20px rgba(0,0,0,.2);
+
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+      -webkit-tap-highlight-color: transparent;
     }
 
-    #ar-button:active {
-      transform: scale(0.98);
+    #launch-ar:active {
+      transform: scale(0.97);
+    }
+
+    #launch-ar:disabled {
+      opacity: 0.6;
+      cursor: wait;
+    }
+
+    #message {
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      top: calc(50% + 60px);
+
+      margin: 0;
+      text-align: center;
+      font-size: 15px;
+      color: #555555;
     }
   </style>
 </head>
 
 <body>
 
-<model-viewer
-  id="viewer"
-  src="./momma_trex_anim.glb"
-  ios-src="./momma_trex_anim.usdz"
-  ar
-  autoplay
-  ar-placement="floor"
-  ar-modes="webxr scene-viewer quick-look">
+  <model-viewer
+    id="dino-viewer"
+    src="./momma_trex_anim.glb"
+    ios-src="./momma_trex_anim.usdz"
+    alt="Animated dinosaur"
+    ar
+    ar-placement="floor"
+    ar-modes="webxr scene-viewer quick-look">
+  </model-viewer>
 
-  <button id="ar-button" slot="ar-button">
-    🦖 View Dino in AR
-  </button>
+  <main class="landing-screen">
+    <button id="launch-ar" type="button">
+      🦖 View Dino in AR
+    </button>
 
-</model-viewer>
+    <p id="message" aria-live="polite"></p>
+  </main>
 
-<div class="overlay"></div>
+  <script>
+    const viewer = document.getElementById("dino-viewer");
+    const launchButton = document.getElementById("launch-ar");
+    const message = document.getElementById("message");
+
+    launchButton.addEventListener("click", async () => {
+      launchButton.disabled = true;
+      launchButton.textContent = "Opening AR…";
+      message.textContent = "";
+
+      try {
+        await viewer.activateAR();
+      } catch (error) {
+        console.error("AR could not be opened:", error);
+
+        message.textContent =
+          "AR could not be opened. Please use Safari on a compatible iPhone.";
+
+        launchButton.disabled = false;
+        launchButton.textContent = "🦖 View Dino in AR";
+      }
+    });
+
+    /*
+      Restore the button when the user returns from Quick Look.
+    */
+    window.addEventListener("pageshow", () => {
+      launchButton.disabled = false;
+      launchButton.textContent = "🦖 View Dino in AR";
+    });
+  </script>
 
 </body>
 </html>
