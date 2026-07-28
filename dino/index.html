@@ -15,27 +15,52 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #f2f2f2;
+      background: #ffffff;
+      font-family: Arial, Helvetica, sans-serif;
     }
 
     model-viewer {
       width: 100%;
       height: 100%;
+      --poster-color: transparent;
       background: transparent;
     }
 
+    /* Hide the 3D model before AR */
+    model-viewer::part(default-progress-bar),
+    model-viewer::part(default-ar-button),
+    model-viewer::part(default-loading-spinner) {
+      display: none;
+    }
+
+    /* Cover the preview with a white layer */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Our custom AR button */
     #ar-button {
-      position: absolute;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 14px 24px;
-      font-size: 18px;
+      pointer-events: auto;
+      padding: 18px 36px;
+      font-size: 22px;
+      font-weight: bold;
       border: none;
       border-radius: 999px;
       background: #007AFF;
       color: white;
       cursor: pointer;
+      box-shadow: 0 8px 20px rgba(0,0,0,.2);
+    }
+
+    #ar-button:active {
+      transform: scale(0.98);
     }
   </style>
 </head>
@@ -43,12 +68,11 @@
 <body>
 
 <model-viewer
-  src="./momma_trex_anim.glb"
-  ios-src="./momma_trex_anim.usdz"
-  alt="Animated Dinosaur"
-  autoplay
-  camera-controls
+  id="viewer"
+  src="./dino.glb"
+  ios-src="./dino.usdz"
   ar
+  autoplay
   ar-placement="floor"
   ar-modes="webxr scene-viewer quick-look">
 
@@ -57,6 +81,8 @@
   </button>
 
 </model-viewer>
+
+<div class="overlay"></div>
 
 </body>
 </html>
