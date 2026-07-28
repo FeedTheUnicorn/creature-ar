@@ -1,0 +1,53 @@
+
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script type="module"
+    src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
+  </script>
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: black;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+    }
+
+    button {
+      padding: 14px 22px;
+      font-size: 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+
+<model-viewer
+  src="creature.glb"
+  ios-src="creature.usdz"
+  ar
+  ar-modes="webxr scene-viewer quick-look"
+  ar-placement="floor"
+  camera-controls
+  autoplay>
+
+  <button slot="ar-button">
+    View Creature in AR
+  </button>
+
+</model-viewer>
+
+</body>
+</html>
