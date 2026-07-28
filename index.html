@@ -1,20 +1,31 @@
-
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1"
+  >
 
-  <script type="module"
+  <title>Bird AR</title>
+
+  <script
+    type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">
   </script>
 
   <style>
-    html, body {
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
       margin: 0;
+      width: 100%;
       height: 100%;
-      background: black;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(#ccecff, #ffffff);
     }
 
     model-viewer {
@@ -22,32 +33,64 @@
       height: 100%;
     }
 
-    button {
-      padding: 14px 22px;
-      font-size: 20px;
+    #ar-button {
+      position: absolute;
+      left: 50%;
+      bottom: 32px;
+      transform: translateX(-50%);
+      padding: 14px 24px;
+      border: 0;
       border-radius: 999px;
-      border: none;
+      background: white;
+      color: black;
+      font-size: 18px;
+      font-weight: bold;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
       cursor: pointer;
+    }
+
+    .instructions {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      width: min(90%, 420px);
+      transform: translateX(-50%);
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.9);
+      text-align: center;
+      z-index: 2;
+    }
+
+    .instructions strong {
+      display: block;
+      margin-bottom: 4px;
     }
   </style>
 </head>
 
 <body>
+  <div class="instructions">
+    <strong>Bring the bird into your space</strong>
+    Tap the button, point your phone at the floor or a table, and place it.
+  </div>
 
-<model-viewer
-  src="creatures.glb"
-  ios-src="creature.usdz"
-  ar
-  ar-modes="webxr scene-viewer quick-look"
-  ar-placement="floor"
-  camera-controls
-  autoplay>
+  <model-viewer
+    src="./creatures.glb"
+    ios-src="./creature.usdz"
+    alt="A 3D bird"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-placement="floor"
+    camera-controls
+    auto-rotate
+    shadow-intensity="1"
+    environment-image="neutral">
 
-  <button slot="ar-button">
-    View Creature in AR
-  </button>
+    <button id="ar-button" slot="ar-button">
+      View Bird in AR
+    </button>
 
-</model-viewer>
-
+  </model-viewer>
 </body>
 </html>
