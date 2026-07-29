@@ -1,1 +1,588 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <title>A Small Visitor</title>
+
+  <!-- Loads Google's model-viewer web component -->
+  <script
+    type="module"
+    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+  </script>
+
+  <style>
+    :root {
+      --background: #f3f0e8;
+      --text: #263228;
+      --secondary-text: #617064;
+      --accent: #536b57;
+      --accent-hover: #405544;
+      --panel: rgba(255, 255, 255, 0.72);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
+
+    body {
+      min-height: 100svh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(
+          circle at 50% 20%,
+          rgba(255, 255, 255, 0.9),
+          transparent 42%
+        ),
+        var(--background);
+
+      color: var(--text);
+      font-family:
+        Georgia,
+        "Times New Roman",
+        serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    main {
+      width: min(100%, 900px);
+      min-height: 100svh;
+      margin: 0 auto;
+      padding:
+        max(24px, env(safe-area-inset-top))
+        20px
+        max(24px, env(safe-area-inset-bottom));
+
+      display: grid;
+      grid-template-rows: auto minmax(380px, 1fr) auto;
+      align-items: center;
+    }
+
+    .story {
+      position: relative;
+      z-index: 2;
+      max-width: 620px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .story h1 {
+      margin: 0 0 16px;
+      font-size: clamp(2rem, 7vw, 4rem);
+      font-weight: 500;
+      line-height: 1.05;
+      letter-spacing: -0.025em;
+    }
+
+    .story p {
+      max-width: 530px;
+      margin: 0 auto;
+      font-size: clamp(1rem, 2.8vw, 1.25rem);
+      line-height: 1.65;
+    }
+
+    .instruction {
+      margin-top: 18px !important;
+      color: var(--secondary-text);
+      font-size: 0.95rem !important;
+      font-style: italic;
+    }
+
+    .viewer-container {
+      position: relative;
+      width: 100%;
+      height: min(62svh, 620px);
+      min-height: 380px;
+      margin: 10px auto;
+    }
+
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      cursor: pointer;
+
+      /*
+       * Controls the colour of model-viewer's loading bar.
+       */
+      --progress-bar-color: var(--accent);
+      --progress-bar-height: 3px;
+
+      /*
+       * Hide model-viewer's standard AR button because
+       * this page uses the goose itself as the launcher.
+       */
+      --ar-button-display: none;
+    }
+
+    /*
+     * This invisible button covers the goose viewer.
+     * It makes the complete model area easy to tap,
+     * without relying on precise 3D hit detection.
+     */
+    .goose-launcher {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .goose-launcher:focus-visible {
+      outline: 3px solid var(--accent);
+      outline-offset: -8px;
+      border-radius: 24px;
+    }
+
+    .tap-label {
+      position: absolute;
+      z-index: 5;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      pointer-events: none;
+
+      padding: 10px 16px;
+      border: 1px solid rgba(38, 50, 40, 0.14);
+      border-radius: 999px;
+      background: var(--panel);
+      box-shadow: 0 8px 28px rgba(38, 50, 40, 0.08);
+      backdrop-filter: blur(10px);
+
+      color: var(--text);
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .status-message {
+      min-height: 28px;
+      margin: 0;
+      color: var(--secondary-text);
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .ending {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+
+      display: grid;
+      place-items: center;
+      padding:
+        max(24px, env(safe-area-inset-top))
+        20px
+        max(24px, env(safe-area-inset-bottom));
+
+      visibility: hidden;
+      opacity: 0;
+      background: rgba(243, 240, 232, 0.97);
+      transition:
+        opacity 500ms ease,
+        visibility 500ms ease;
+    }
+
+    .ending.visible {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .ending-card {
+      width: min(100%, 600px);
+      text-align: center;
+    }
+
+    .ending-card h2 {
+      margin: 0 0 18px;
+      font-size: clamp(1.8rem, 6vw, 3.4rem);
+      font-weight: 500;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .ending-card p {
+      margin: 0 0 30px;
+      color: var(--secondary-text);
+      font-size: clamp(1rem, 3vw, 1.2rem);
+      font-style: italic;
+      line-height: 1.6;
+    }
+
+    .restart-button {
+      min-height: 48px;
+      padding: 12px 22px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      font-size: 1rem;
+
+      transition:
+        background 180ms ease,
+        transform 180ms ease;
+    }
+
+    .restart-button:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .restart-button:focus-visible {
+      outline: 3px solid var(--text);
+      outline-offset: 4px;
+    }
+
+    @media (max-width: 600px) {
+      main {
+        grid-template-rows: auto minmax(350px, 1fr) auto;
+      }
+
+      .viewer-container {
+        height: 52svh;
+        min-height: 350px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <header class="story">
+      <h1>A Small Visitor</h1>
+
+      <p>
+        One of the geese from the Gulbenkian Gardens has wandered
+        a little farther than usual.
+        Would you give it a place to rest?
+      </p>
+
+      <p class="instruction">
+        Tap the goose to welcome your guest.
+      </p>
+    </header>
+
+    <section
+      class="viewer-container"
+      aria-label="Interactive three-dimensional goose"
+    >
+      <model-viewer
+        id="goose"
+        src="./Goose2.glb"
+        ios-src="./Goose2.usdz"
+
+        alt="A small animated goose inspired by the geese of the Gulbenkian Gardens"
+
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        ar-scale="fixed"
+        ar-placement="floor"
+
+        autoplay
+        loop
+
+        camera-controls
+        disable-pan
+        touch-action="pan-y"
+
+        shadow-intensity="1"
+        shadow-softness="1"
+        exposure="1"
+
+        interaction-prompt="none"
+        loading="eager">
+      </model-viewer>
+
+      <button
+        id="goose-launcher"
+        class="goose-launcher"
+        type="button"
+        aria-label="Place the goose in augmented reality">
+      </button>
+
+      <div id="tap-label" class="tap-label" aria-hidden="true">
+        Tap to welcome your guest
+      </div>
+    </section>
+
+    <p
+      id="status-message"
+      class="status-message"
+      role="status"
+      aria-live="polite">
+    </p>
+  </main>
+
+  <section
+    id="ending"
+    class="ending"
+    aria-hidden="true"
+    aria-labelledby="ending-title"
+  >
+    <div class="ending-card">
+      <h2 id="ending-title">
+        Thank you for giving your guest a place to rest.
+      </h2>
+
+      <p>
+        Perhaps we'll meet again in the gardens.
+      </p>
+
+      <button
+        id="restart-button"
+        class="restart-button"
+        type="button">
+        Welcome another guest
+      </button>
+    </div>
+  </section>
+
+  <script>
+    const viewer = document.querySelector("#goose");
+    const launcher = document.querySelector("#goose-launcher");
+    const tapLabel = document.querySelector("#tap-label");
+    const statusMessage = document.querySelector("#status-message");
+    const ending = document.querySelector("#ending");
+    const restartButton = document.querySelector("#restart-button");
+
+    /*
+     * Tracks whether the user has deliberately started AR.
+     * This prevents an ordinary browser-tab change from
+     * accidentally showing the ending.
+     */
+    let arRequested = false;
+    let pageWasHiddenForAR = false;
+    let arSessionStarted = false;
+    let endingShown = false;
+
+    function setStatus(message) {
+      statusMessage.textContent = message;
+    }
+
+    function showEnding() {
+      if (!arRequested || endingShown) {
+        return;
+      }
+
+      endingShown = true;
+      ending.classList.add("visible");
+      ending.setAttribute("aria-hidden", "false");
+      restartButton.focus();
+    }
+
+    function resetExperience() {
+      arRequested = false;
+      pageWasHiddenForAR = false;
+      arSessionStarted = false;
+      endingShown = false;
+
+      ending.classList.remove("visible");
+      ending.setAttribute("aria-hidden", "true");
+
+      tapLabel.hidden = false;
+      launcher.disabled = false;
+      setStatus("");
+
+      /*
+       * Restart the GLB animation in the webpage.
+       */
+      viewer.currentTime = 0;
+
+      if (typeof viewer.play === "function") {
+        viewer.play();
+      }
+
+      launcher.focus();
+    }
+
+    /*
+     * Launch AR when the visitor taps the goose area.
+     */
+    launcher.addEventListener("click", async () => {
+      if (arRequested) {
+        return;
+      }
+
+      /*
+       * model-viewer sets canActivateAR after checking whether
+       * the current browser/device supports an AR mode.
+       */
+      if (!viewer.canActivateAR) {
+        setStatus(
+          "Augmented reality is not available on this device, " +
+          "but you can still explore the goose here."
+        );
+
+        /*
+         * Remove the invisible overlay so that normal
+         * camera controls can be used on unsupported devices.
+         */
+        launcher.hidden = true;
+        tapLabel.textContent = "Drag to explore the goose";
+        return;
+      }
+
+      arRequested = true;
+      launcher.disabled = true;
+      tapLabel.hidden = true;
+      setStatus("Preparing a place for your guest…");
+
+      try {
+        await viewer.activateAR();
+      } catch (error) {
+        console.error("AR could not be launched:", error);
+
+        arRequested = false;
+        launcher.disabled = false;
+        tapLabel.hidden = false;
+
+        setStatus(
+          "The AR view could not be opened. Please try again."
+        );
+      }
+    });
+
+    /*
+     * model-viewer emits ar-status events for supported AR modes.
+     * Possible statuses include session-started, object-placed,
+     * not-presenting and failed.
+     */
+    viewer.addEventListener("ar-status", (event) => {
+      const status = event.detail.status;
+
+      if (status === "session-started") {
+        arSessionStarted = true;
+        setStatus("");
+      }
+
+      if (status === "object-placed") {
+        setStatus("");
+      }
+
+      if (
+        status === "not-presenting" &&
+        arRequested &&
+        arSessionStarted
+      ) {
+        showEnding();
+      }
+
+      if (status === "failed") {
+        arRequested = false;
+        arSessionStarted = false;
+        launcher.disabled = false;
+        tapLabel.hidden = false;
+
+        setStatus(
+          "The AR view could not be opened. Please try again."
+        );
+      }
+    });
+
+    /*
+     * iPhone Quick Look opens outside the webpage.
+     * While it is open, Safari normally hides the page.
+     * When Safari becomes visible again, show the farewell.
+     *
+     * This is included as a fallback because native Quick Look
+     * behaviour can differ from an in-browser WebXR session.
+     */
+    document.addEventListener("visibilitychange", () => {
+      if (!arRequested) {
+        return;
+      }
+
+      if (document.hidden) {
+        pageWasHiddenForAR = true;
+        return;
+      }
+
+      if (pageWasHiddenForAR) {
+        /*
+         * A short delay avoids displaying the ending while
+         * the browser is still restoring the page.
+         */
+        window.setTimeout(showEnding, 450);
+      }
+    });
+
+    viewer.addEventListener("load", () => {
+      setStatus("");
+
+      /*
+       * Ensure the first available animation is playing.
+       * The autoplay attribute usually handles this already.
+       */
+      if (viewer.availableAnimations.length > 0) {
+        viewer.play();
+      }
+    });
+
+    viewer.addEventListener("error", (event) => {
+      console.error("Model loading error:", event);
+
+      setStatus(
+        "The goose model could not be loaded. " +
+        "Check that goose.glb is uploaded beside index.html."
+      );
+
+      launcher.disabled = true;
+      tapLabel.hidden = true;
+    });
+
+    restartButton.addEventListener("click", resetExperience);
+  </script>
+</body>
+</html>
